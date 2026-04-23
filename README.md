@@ -2,41 +2,75 @@
 
 Aplicación web para comparar y comprar coches con autenticación de usuario y base de datos Firebase.
 
-## ⚠️ IMPORTANTE: Firebase Configuration Error
+## ⚠️ IMPORTANTE: Firebase NO CONFIGURADO
 
-Si ves el error `Firebase: Error (auth/configuration-not-found)`, significa que el proyecto de Firebase actual no existe o está mal configurado.
+**El proyecto de Firebase `carcompare-b9451` NO EXISTE.** Por eso el login no funciona.
 
-### 🚀 Solución Rápida
+### ✅ Lo que SÍ funciona:
+- Búsqueda y filtrado de coches
+- Carrito de compras (datos locales)
+- Comparador de vehículos
+- Interfaz completa y responsive
 
-**Ejecuta el contenido de `setup-firebase.js` en la consola del navegador** para ver la guía completa paso a paso.
+### ❌ Lo que NO funciona:
+- Login con Google
+- Guardado de datos en la nube
+- Favoritos persistentes
 
-### Pasos para arreglar:
+## 🚀 SOLUCIÓN: Configurar Firebase
 
-1. **Crear nuevo proyecto Firebase:**
+### Opción A: Crear proyecto nuevo (Recomendado)
+
+**Ejecuta el contenido de `firebase-debug-updated.js` en la consola del navegador** para ver la guía completa.
+
+### Pasos detallados:
+
+1. **Crear proyecto:**
    - Ve a https://console.firebase.google.com/
-   - Crea proyecto llamado "carcompare" (o similar)
+   - "Crear un proyecto" → Nombre: `carcompare`
+   - Habilita Google Analytics
 
-2. **Habilitar servicios:**
-   - **Authentication:** Habilita Google Sign-in
-   - **Firestore:** Crea base de datos en modo prueba
-   - **Analytics:** Opcional pero recomendado
+2. **Configurar Authentication:**
+   - Authentication → Sign-in method → Habilitar Google
+   - Configurar nombre público: "CarCompare"
 
-3. **Configurar dominios:**
-   - En Authentication > Configuración > Dominios autorizados
-   - Añade: `carcompare-mu.vercel.app` y `localhost`
+3. **Configurar Firestore:**
+   - Firestore Database → Crear base de datos → Modo de prueba
 
-4. **Obtener nuevas claves:**
-   - Configuración del proyecto > Tus apps > Web app
-   - Copia el `firebaseConfig` y reemplaza en `script.js`
+4. **Obtener configuración:**
+   - Configuración del proyecto → Tus apps → Web app (</>)
+   - Registrar app → Copiar `firebaseConfig`
 
-5. **Probar:**
-   - Sube cambios a GitHub
-   - Ve a carcompare-mu.vercel.app
-   - El login debería funcionar
+5. **Actualizar código:**
+   - Reemplazar configuración en `script.js`
+   - Añadir dominios: `carcompare-mu.vercel.app` y `localhost`
 
-### 🔧 Troubleshooting
+6. **Subir cambios:**
+   ```bash
+   git add . && git commit -m "Configure Firebase" && git push
+   ```
 
-Si aún no funciona, ejecuta `firebase-debug.js` en la consola del navegador para diagnóstico detallado.
+### Opción B: Usar proyecto existente
+
+Si ya tienes un proyecto de Firebase, simplemente:
+1. Copia las claves de configuración
+2. Pégalas en `script.js`
+3. Asegúrate de que Authentication y Firestore estén habilitados
+4. Añade el dominio `carcompare-mu.vercel.app` a dominios autorizados
+
+## 🔧 Troubleshooting
+
+- **Error "Can't find variable: auth"**: Firebase no inicializado (normal)
+- **Error "configuration-not-found"**: Proyecto no existe
+- **Login no abre popup**: Dominios no autorizados
+
+Para diagnosticar: ejecuta `firebase-debug-updated.js` en la consola.
+
+## 📱 Estado actual
+
+**URL:** https://carcompare-mu.vercel.app/
+**Estado:** Funcional con datos locales
+**Login:** Deshabilitado hasta configurar Firebase
 
 #### Error "Can't find variable: auth"
 - **Causa**: Firebase no se inicializó correctamente

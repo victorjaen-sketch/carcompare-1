@@ -17,8 +17,8 @@ const firebaseConfig = {
     projectId: "carcompare-b9451",
     storageBucket: "carcompare-b9451.firebasestorage.app",
     messagingSenderId: "944264641748",
-    appId: "1:944264641748:web:808e0c29d1ab465d564f41",
-    measurementId: "G-806CLNPF4F"
+    appId: "1:944264641748:web:31d6a00b745dcfdb564f41",
+    measurementId: "G-SX67RY5D1Q"
 };
 
 // Verificar configuración antes de inicializar
