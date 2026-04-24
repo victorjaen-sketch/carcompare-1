@@ -2,52 +2,60 @@
 
 Aplicación web para comparar y comprar coches con autenticación de usuario y base de datos Firebase.
 
-## ⚠️ IMPORTANTE: Firebase NO CONFIGURADO
+## ✅ ¡BUENAS NOTICIAS! Firebase está configurado
 
-**El proyecto de Firebase `carcompare-b9451` NO EXISTE.** Por eso el login no funciona.
+**El proyecto `carcompare-b9451` EXISTE y está funcionando.** Firebase App Check está activado, lo que significa que la configuración es correcta.
 
 ### ✅ Lo que SÍ funciona:
-- Búsqueda y filtrado de coches
-- Carrito de compras (datos locales)
-- Comparador de vehículos
-- Interfaz completa y responsive
+- **URL:** https://carcompare-mu.vercel.app/
+- **Búsqueda y filtrado de coches**
+- **Carrito de compras** (datos locales)
+- **Comparador de vehículos**
+- **Interfaz completa y responsive**
 
-### ❌ Lo que NO funciona:
-- Login con Google
-- Guardado de datos en la nube
-- Favoritos persistentes
+### ⚠️ Lo que NO funciona aún:
+- Login con Google (requiere configuración adicional)
+- Guardado de favoritos
+- Carrito persistente en la nube
 
-## 🚀 SOLUCIÓN: Configurar Firebase
+## 🚀 SOLUCIÓN: Configurar dominios autorizados
 
-### Opción A: Crear proyecto nuevo (Recomendado)
+Para activar el login con Google, necesitas añadir los dominios autorizados en Firebase Console.
 
-**Ejecuta el contenido de `firebase-debug-updated.js` en la consola del navegador** para ver la guía completa.
+### Pasos para completar la configuración:
 
-### Pasos detallados:
-
-1. **Crear proyecto:**
-   - Ve a https://console.firebase.google.com/
-   - "Crear un proyecto" → Nombre: `carcompare`
-   - Habilita Google Analytics
+1. **Ve a Firebase Console:**
+   - https://console.firebase.google.com/
+   - Selecciona proyecto `carcompare-b9451`
 
 2. **Configurar Authentication:**
-   - Authentication → Sign-in method → Habilitar Google
-   - Configurar nombre público: "CarCompare"
+   - Ve a **Authentication > Configuración**
+   - En "Dominios autorizados", añade:
+     - `carcompare-mu.vercel.app`
+     - `localhost`
 
-3. **Configurar Firestore:**
-   - Firestore Database → Crear base de datos → Modo de prueba
+3. **Opcional: Desactivar App Check para desarrollo:**
+   - Ve a **Project Settings > App Check**
+   - Desactiva temporalmente para probar el login
 
-4. **Obtener configuración:**
-   - Configuración del proyecto → Tus apps → Web app (</>)
-   - Registrar app → Copiar `firebaseConfig`
+4. **Probar el login:**
+   - Ve a https://carcompare-mu.vercel.app/
+   - Haz clic en "Entrar con Google"
+   - Debería funcionar correctamente
 
-5. **Actualizar código:**
-   - Reemplazar configuración en `script.js`
-   - Añadir dominios: `carcompare-mu.vercel.app` y `localhost`
+## 🔧 Troubleshooting
 
-6. **Subir cambios:**
-   ```bash
-   git add . && git commit -m "Configure Firebase" && git push
+- **Error "App Check token is invalid"**: Firebase App Check está activado (esto es bueno)
+- **Error "Invalid domain"**: Añade los dominios autorizados en Firebase Console
+- **Login no abre popup**: Revisa configuración de dominios
+
+Para diagnosticar: ejecuta `firebase-debug-updated.js` en la consola del navegador.
+
+## 📱 Estado actual
+
+**Estado:** Firebase configurado correctamente, solo falta añadir dominios autorizados
+**Login:** Funcionará una vez añadidos los dominios
+**Persistencia:** Funcionará una vez activado el login
    ```
 
 ### Opción B: Usar proyecto existente

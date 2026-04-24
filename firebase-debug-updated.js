@@ -47,7 +47,7 @@ try {
     console.error("Error al verificar config:", e);
 }
 
-// Probar conexión con Firebase
+// Probar conexión con Firebase - método alternativo
 console.log("🌐 Probando conexión con nuevas claves...");
 fetch('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=AIzaSyD43VnRxL2pMGxt676rw9TFQVB7JCIHPmQ', {
     method: 'POST',
@@ -97,6 +97,15 @@ fetch('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=AIzaSyD43Vn
             console.log("   git add . && git commit -m 'Update Firebase config' && git push");
             console.log("");
             console.log("🎯 RESULTADO: Login con Google funcionará perfectamente");
+        } else if (data.error.message.includes('App Check token is invalid')) {
+            console.log("⚠️ Firebase App Check está activado - esto es normal");
+            console.log("✅ El proyecto existe, pero necesita configuración adicional");
+            console.log("📝 SOLUCIÓN:");
+            console.log("1. Ve a Firebase Console > Project Settings > App Check");
+            console.log("2. Desactiva App Check temporalmente para desarrollo");
+            console.log("3. O configura App Check correctamente");
+            console.log("");
+            console.log("🔧 Para desarrollo rápido, puedes desactivar App Check");
         }
     } else {
         console.log("✅ Conexión exitosa con Firebase - ¡El proyecto existe!");
