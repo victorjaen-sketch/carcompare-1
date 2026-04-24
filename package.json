@@ -1,0 +1,13 @@
+{
+  "name": "carcompare",
+  "version": "1.0.0",
+  "description": "Aplicación web para comparar y comprar coches con autenticación Firebase",
+  "main": "index.html",
+  "scripts": {
+    "dev": "python3 server.py",
+    "start": "python3 server.py"
+  },
+  "keywords": ["cars", "comparison", "firebase", "webapp"],
+  "author": "Victor Jaen",
+  "license": "MIT"
+}

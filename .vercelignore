@@ -1,0 +1,18 @@
+# Archivos a ignorar en el despliegue de Vercel
+*.py
+*.pyc
+__pycache__/
+*.log
+.git/
+.gitignore
+README.md
+requirements.txt
+add_*.py
+fetch_*.py
+update_*.py
+firebase-*.js
+setup-*.js
+test-*.js
+getCars.js
+server.py
+# Mantener package.json para configuración
