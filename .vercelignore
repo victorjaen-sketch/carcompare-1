@@ -1,12 +1,4 @@
-# Archivos a ignorar en el despliegue de Vercel
-*.py
-*.pyc
-__pycache__/
-*.log
-.git/
-.gitignore
-README.md
-requirements.txt
+# Keep Python scripts in Vercel, but exclude dev scripts
 add_*.py
 fetch_*.py
 update_*.py
@@ -15,4 +7,10 @@ setup-*.js
 test-*.js
 getCars.js
 server.py
-# Mantener package.json para configuración
+.git/
+.gitignore
+__pycache__/
+*.pyc
+*.log
+.venv/
+venv/

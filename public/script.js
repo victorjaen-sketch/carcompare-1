@@ -214,7 +214,7 @@ async function cargarMarcasVpic() {
 
 async function cargarCochesLocales() {
     try {
-        const res = await fetch('./coches.json');
+        const res = await fetch('/coches.json');
         coches = await res.json();
     } catch (err) {
         console.error('Error cargando coches.json:', err);
