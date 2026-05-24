@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-labelledby="title desc">
+  <title id="title">AutoSelect logo</title>
+  <desc id="desc">Ícono de coche estilizado con las letras AS</desc>
+  <rect width="120" height="120" rx="24" fill="#34495e"/>
+  <path d="M24 70 L96 70 C100 70 104 67 106 63 L108 54 C108 51 106 48 103 47 L95 45 C92 44 88 40 84 36 L79 32 C76 29 72 28 68 28 H52 C48 28 44 29 41 32 L36 36 C32 40 28 44 25 45 L17 47 C14 48 12 51 12 54 L14 63 C16 67 20 70 24 70 Z" fill="#ecf0f1"/>
+  <circle cx="34" cy="74" r="8" fill="#ecf0f1"/>
+  <circle cx="86" cy="74" r="8" fill="#ecf0f1"/>
+  <text x="60" y="92" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#ecf0f1" font-weight="700">AS</text>
+</svg>
