@@ -6,7 +6,7 @@
       "use": "@vercel/static"
     },
     {
-      "src": "requirements.txt",
+      "src": "api/index.py",
       "use": "@vercel/python"
     }
   ],
