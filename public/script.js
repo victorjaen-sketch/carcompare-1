@@ -713,7 +713,12 @@ function toggleModoBusqueda() {
     }
 }
 
-cargarDatos();
+// Inicializar datos cuando el DOM está listo
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', cargarDatos);
+} else {
+    cargarDatos();
+}
 
 // Event listeners
 
