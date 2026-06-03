@@ -14,18 +14,6 @@
 </head>
 <body>
 
-    <div class="category-dropdown">
-        <button id="toggle-category-panel" class="category-toggle">Categorías ▾</button>
-        <div id="category-panel" class="category-panel hidden">
-            <label class="category-option"><input type="checkbox" class="category-checkbox" value="4x4"> 4x4</label>
-            <label class="category-option"><input type="checkbox" class="category-checkbox" value="lujo"> Lujo</label>
-            <label class="category-option"><input type="checkbox" class="category-checkbox" value="daily"> Daily</label>
-            <label class="category-option"><input type="checkbox" class="category-checkbox" value="diesel"> Diésel</label>
-            <label class="category-option"><input type="checkbox" class="category-checkbox" value="gasolina"> Gasolina</label>
-            <label class="category-option"><input type="checkbox" class="category-checkbox" value="electrico"> Eléctrico</label>
-        </div>
-    </div>
-
     <header class="header">
         <button id="btn-home" class="btn-home" style="display: none;">← Volver a inicio</button>
         <div class="header-content">
@@ -33,10 +21,46 @@
                 <h1>🚗 AutoSelect</h1>
                 <p class="subtitle">Selecciona el vehículo perfecto para ti</p>
             </div>
+            <div class="category-dropdown">
+                <button id="toggle-category-panel" class="category-toggle">Categorías ▾</button>
+                <div id="category-panel" class="category-panel hidden">
+                    <label class="category-option"><input type="checkbox" class="category-checkbox" value="4x4"> 4x4</label>
+                    <label class="category-option"><input type="checkbox" class="category-checkbox" value="lujo"> Lujo</label>
+                    <label class="category-option"><input type="checkbox" class="category-checkbox" value="daily"> Daily</label>
+                    <label class="category-option"><input type="checkbox" class="category-checkbox" value="diesel"> Diésel</label>
+                    <label class="category-option"><input type="checkbox" class="category-checkbox" value="gasolina"> Gasolina</label>
+                    <label class="category-option"><input type="checkbox" class="category-checkbox" value="electrico"> Eléctrico</label>
+                </div>
+            </div>
+            <div id="auth-actions" class="auth-actions"></div>
         </div>
     </header>
 
+    <section class="auth-section hidden" id="auth-section">
+        <div class="auth-card">
+            <div class="auth-header">
+                <h3>Usuario local</h3>
+                <button id="auth-close" class="btn-secondary auth-close">Cerrar</button>
+            </div>
+            <div class="auth-tabs">
+                <button id="auth-tab-login" class="auth-tab active">Iniciar sesión</button>
+                <button id="auth-tab-register" class="auth-tab">Registrarse</button>
+            </div>
+            <div id="auth-form-container" class="auth-form-container"></div>
+        </div>
+    </section>
+
     <main class="container">
+        <section class="quiz-ad-section">
+            <div class="quiz-ad-card">
+                <div>
+                    <h2>¿No sabes qué coche te conviene?</h2>
+                    <p>Responde un cuestionario rápido y descubre si necesitas un 4x4, un daily, un coche de lujo o eléctrico según tu estilo de uso.</p>
+                </div>
+                <button id="btn-open-quiz" class="btn-primary">Haz el cuestionario ahora</button>
+            </div>
+        </section>
+
         <section class="hero-section">
             <h2>¿Cuál es tu primer coche ideal?</h2>
             <p>Te presentamos 3 sugerencias basadas en popularidad y rendimiento</p>
@@ -44,6 +68,34 @@
             <div class="cta-section">
                 <button id="ver-todos" class="btn-primary">Ver Todos los Vehículos</button>
             </div>
+        </section>
+
+        <section class="dream-carousel-section">
+            <div class="carousel-header">
+                <div>
+                    <p class="eyebrow">Anuncio Premium</p>
+                    <h2>Los coches de tus sueños</h2>
+                </div>
+                <div class="carousel-controls">
+                    <button id="dream-prev" class="carousel-btn" type="button">←</button>
+                    <button id="dream-next" class="carousel-btn" type="button">→</button>
+                </div>
+            </div>
+            <div class="dream-carousel" id="dream-carousel">
+                <div class="carousel-track" id="dream-carousel-track"></div>
+            </div>
+            <div class="carousel-dots" id="dream-carousel-dots"></div>
+        </section>
+
+        <section class="quiz-section hidden" id="quiz-section">
+            <button id="quiz-close-button" class="btn-secondary quiz-close hidden">Cerrar cuestionario</button>
+            <div class="quiz-card" id="quiz-card">
+                <h3>Encuentra tu coche ideal</h3>
+                <p>Responde estas preguntas y te mostraremos la categoría perfecta y un coche recomendado.</p>
+                <button id="quiz-start-button" class="btn-primary">Comenzar cuestionario</button>
+            </div>
+            <div class="quiz-card hidden" id="quiz-question-card"></div>
+            <div class="quiz-card hidden" id="quiz-result-card"></div>
         </section>
 
         <section class="search-section" id="search-section" style="display: none;">

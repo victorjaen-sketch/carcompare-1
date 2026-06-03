@@ -2,6 +2,9 @@ let coches = [];
 let comparados = [];
 let carrito = [];
 let resultadosActuales = [];
+let dreamCars = [];
+let dreamCarouselIndex = 0;
+let dreamCarouselInterval = null;
 let vpicMakes = [];
 let modoBusqueda = false; // false = modo sugerencias, true = modo búsqueda
 const VPIC_API = 'https://vpic.nhtsa.dot.gov/api/vehicles';
@@ -93,69 +96,192 @@ function logout() {
     });
 }
 
-// 2. Detectar si el usuario está logueado
-if (firebaseInitialized && auth) {
-    auth.onAuthStateChanged(user => {
-        console.log("Estado de autenticación cambiado:", user ? "Usuario logueado" : "Usuario no logueado");
-        const authUI = document.getElementById('auth-ui');
-        if (user) {
-            console.log("Usuario:", user.displayName, user.email);
-            authUI.innerHTML = `
-                <div class="user-info">
-                    <span>Hola, ${user.displayName.split(' ')[0]}</span>
-                    <img src="${user.photoURL}" alt="Foto de perfil">
-                    <button onclick="logout()">Salir</button>
-                </div>`;
-            cargarDatosUsuario();
-        } else {
-            authUI.innerHTML = `<button class="btn-google" onclick="login()">Entrar con Google</button>`;
-            // Limpiar datos locales si no hay usuario
-            carrito = [];
-            actualizarCarrito();
-        }
-    });
-} else {
-    // Modo sin Firebase
-    console.log("⚠️ Firebase no inicializado - mostrando UI básica");
-    const authUI = document.getElementById('auth-ui');
-    authUI.innerHTML = `<button class="btn-secondary" onclick="alert('Firebase no configurado. Revisa la consola para instrucciones.')">Login (No disponible)</button>`;
+// 2. Autenticación local con base de datos en localStorage
+const LOCAL_USERS_KEY = 'autosel_local_users';
+const LOCAL_SESSION_KEY = 'autosel_current_user';
+let usuariosLocal = {};
+let usuarioActual = null;
+
+function hashTexto(texto) {
+    let hash = 0;
+    const str = String(texto);
+    for (let i = 0; i < str.length; i++) {
+        hash = ((hash << 5) - hash) + str.charCodeAt(i);
+        hash |= 0;
+    }
+    return hash.toString(16);
 }
-// 3. Cargar datos del usuario desde Firestore
+
+function cargarUsuariosLocales() {
+    try {
+        const data = localStorage.getItem(LOCAL_USERS_KEY);
+        usuariosLocal = data ? JSON.parse(data) : {};
+    } catch (error) {
+        usuariosLocal = {};
+    }
+}
+
+function guardarUsuariosLocales() {
+    localStorage.setItem(LOCAL_USERS_KEY, JSON.stringify(usuariosLocal));
+}
+
+function cargarSesionLocal() {
+    usuarioActual = localStorage.getItem(LOCAL_SESSION_KEY);
+    if (usuarioActual && !usuariosLocal[usuarioActual]) {
+        usuarioActual = null;
+        localStorage.removeItem(LOCAL_SESSION_KEY);
+    }
+}
+
+function guardarSesionLocal(nombre) {
+    usuarioActual = nombre;
+    localStorage.setItem(LOCAL_SESSION_KEY, nombre);
+    actualizarAuthActions();
+}
+
+function cerrarSesionLocal() {
+    usuarioActual = null;
+    localStorage.removeItem(LOCAL_SESSION_KEY);
+    actualizarAuthActions();
+}
+
+function registrarInteraccion(tipo, payload) {
+    if (!usuarioActual) return;
+    const usuario = usuariosLocal[usuarioActual];
+    if (!usuario) return;
+    usuario.interacciones = usuario.interacciones || [];
+    usuario.interacciones.push({ tipo, payload, fecha: new Date().toISOString() });
+    guardarUsuariosLocales();
+}
+
+function actualizarAuthActions() {
+    const container = document.getElementById('auth-actions');
+    if (!container) return;
+    if (usuarioActual) {
+        container.innerHTML = `
+            <div class="auth-welcome">
+                <span>Hola, ${usuarioActual}</span>
+                <button id="auth-logout" class="btn-secondary">Cerrar sesión</button>
+            </div>`;
+        document.getElementById('auth-logout').addEventListener('click', cerrarSesionLocal);
+    } else {
+        container.innerHTML = `<button id="auth-open" class="btn-primary">Iniciar sesión</button>`;
+        document.getElementById('auth-open').addEventListener('click', mostrarAuthSection);
+    }
+}
+
+function mostrarAuthSection() {
+    const section = document.getElementById('auth-section');
+    if (!section) return;
+    section.classList.remove('hidden');
+    cambiarAuthTab('login');
+}
+
+function ocultarAuthSection() {
+    const section = document.getElementById('auth-section');
+    if (!section) return;
+    section.classList.add('hidden');
+}
+
+function cambiarAuthTab(tipo) {
+    document.getElementById('auth-tab-login').classList.toggle('active', tipo === 'login');
+    document.getElementById('auth-tab-register').classList.toggle('active', tipo === 'register');
+    renderizarAuthForm(tipo);
+}
+
+function renderizarAuthForm(tipo) {
+    const container = document.getElementById('auth-form-container');
+    if (!container) return;
+    if (tipo === 'login') {
+        container.innerHTML = `
+            <form id="auth-form" class="auth-form">
+                <label>Usuario <input id="auth-username" type="text" required></label>
+                <label>Contraseña <input id="auth-password" type="password" required></label>
+                <button type="submit" class="btn-primary">Entrar</button>
+            </form>`;
+        document.getElementById('auth-form').addEventListener('submit', autenticarLocal);
+    } else {
+        container.innerHTML = `
+            <form id="auth-form" class="auth-form">
+                <label>Usuario <input id="auth-username" type="text" required></label>
+                <label>Contraseña <input id="auth-password" type="password" required></label>
+                <button type="submit" class="btn-primary">Registrar</button>
+            </form>`;
+        document.getElementById('auth-form').addEventListener('submit', registrarLocal);
+    }
+}
+
+function autenticarLocal(event) {
+    event.preventDefault();
+    const username = document.getElementById('auth-username').value.trim();
+    const password = document.getElementById('auth-password').value;
+    if (!username || !password) return;
+
+    const user = usuariosLocal[username];
+    if (!user || user.password !== hashTexto(password)) {
+        alert('Usuario o contraseña incorrectos.');
+        return;
+    }
+
+    guardarSesionLocal(username);
+    cargarDatosUsuario();
+    ocultarAuthSection();
+    alert(`Bienvenido de nuevo, ${username}`);
+}
+
+function registrarLocal(event) {
+    event.preventDefault();
+    const username = document.getElementById('auth-username').value.trim();
+    const password = document.getElementById('auth-password').value;
+    if (!username || !password) return;
+    if (usuariosLocal[username]) {
+        alert('El usuario ya existe. Usa otro nombre.');
+        return;
+    }
+
+    usuariosLocal[username] = {
+        password: hashTexto(password),
+        interacciones: [],
+        carrito: [],
+        preferencias: {}
+    };
+    guardarUsuariosLocales();
+    guardarSesionLocal(username);
+    cargarDatosUsuario();
+    ocultarAuthSection();
+    alert(`Cuenta creada. Bienvenido, ${username}`);
+}
+
+const authCloseBtn = document.getElementById('auth-close');
+if (authCloseBtn) {
+    authCloseBtn.addEventListener('click', ocultarAuthSection);
+}
+
+const authTabLogin = document.getElementById('auth-tab-login');
+const authTabRegister = document.getElementById('auth-tab-register');
+if (authTabLogin) {
+    authTabLogin.addEventListener('click', () => cambiarAuthTab('login'));
+}
+if (authTabRegister) {
+    authTabRegister.addEventListener('click', () => cambiarAuthTab('register'));
+}
+
 async function cargarDatosUsuario() {
-    if (!firebaseInitialized || !auth || !db) return;
+    if (!usuarioActual) return;
+    const usuario = usuariosLocal[usuarioActual];
+    if (!usuario) return;
 
-    const user = auth.currentUser;
-    if (!user) return;
-
-    try {
-        const userRef = db.collection('usuarios').doc(user.uid);
-        const doc = await userRef.get();
-        if (doc.exists) {
-            const data = doc.data();
-            carrito = data.carrito || [];
-            // Aquí puedes cargar favoritos si los tienes
-            actualizarCarrito();
-        }
-    } catch (error) {
-        console.error("Error cargando datos:", error);
-    }
+    carrito = usuario.carrito || [];
+    actualizarCarrito();
 }
 
-// 4. Guardar datos del usuario en Firestore
-async function guardarDatosUsuario() {
-    if (!firebaseInitialized || !auth || !db) return;
+function guardarDatosUsuario() {
+    if (!usuarioActual) return;
+    const usuario = usuariosLocal[usuarioActual];
+    if (!usuario) return;
 
-    const user = auth.currentUser;
-    if (!user) return;
-
-    try {
-        await db.collection('usuarios').doc(user.uid).set({
-            carrito: carrito,
-            // Agrega más campos como favoritos si los implementas
-        }, { merge: true });
-    } catch (error) {
-        console.error("Error guardando datos:", error);
-    }
+    usuario.carrito = carrito;
+    guardarUsuariosLocales();
 }
 
 // 5. Toggle Favorito
@@ -194,9 +320,178 @@ async function toggleFav(modelo) {
 }
 
 async function cargarDatos() {
+    cargarUsuariosLocales();
+    cargarSesionLocal();
+    actualizarAuthActions();
+    cargarDatosUsuario();
     await cargarCochesLocales();
     await cargarMarcasVpic();
     mostrarSugerencias();
+    mostrarCarruselDeSueños();
+}
+
+const quizPreguntas = [
+    {
+        pregunta: '¿Dónde usas más el coche?',
+        opciones: ['Ciudad', 'Montaña', 'Autopista', 'Uso mixto']
+    },
+    {
+        pregunta: '¿Cuántos kilómetros haces normalmente al día?',
+        opciones: ['Menos de 30 km', '30 a 80 km', 'Más de 80 km']
+    },
+    {
+        pregunta: '¿Cuántas personas suelen viajar contigo?',
+        opciones: ['1-2', '3-4', '5 o más']
+    },
+    {
+        pregunta: '¿Prefieres un coche más económico o más cómodo?',
+        opciones: ['Económico', 'Cómodo', 'Equilibrado']
+    },
+    {
+        pregunta: '¿Te interesa un coche eléctrico?',
+        opciones: ['Sí', 'No', 'Me da igual']
+    }
+];
+let respuestasQuiz = [];
+let preguntaActual = 0;
+
+function abrirQuiz() {
+    document.getElementById('quiz-section').classList.remove('hidden');
+    document.getElementById('quiz-close-button').classList.remove('hidden');
+    document.getElementById('quiz-card').classList.remove('hidden');
+    document.getElementById('quiz-question-card').classList.add('hidden');
+    document.getElementById('quiz-result-card').classList.add('hidden');
+    window.scrollTo({ top: document.getElementById('quiz-section').offsetTop - 20, behavior: 'smooth' });
+}
+
+function cerrarQuiz() {
+    document.getElementById('quiz-section').classList.add('hidden');
+    document.getElementById('quiz-close-button').classList.add('hidden');
+}
+
+function iniciarQuiz() {
+    respuestasQuiz = [];
+    preguntaActual = 0;
+    renderizarPregunta();
+}
+
+function renderizarPregunta() {
+    const pregunta = quizPreguntas[preguntaActual];
+    const card = document.getElementById('quiz-question-card');
+    card.classList.remove('hidden');
+    document.getElementById('quiz-card').classList.add('hidden');
+
+    card.innerHTML = `
+        <h3>${pregunta.pregunta}</h3>
+        <div class="quiz-options">${pregunta.opciones.map((opcion, index) => `<button class="btn-secondary quiz-option" data-index="${index}">${opcion}</button>`).join('')}</div>
+        <div class="quiz-progress">Pregunta ${preguntaActual + 1} de ${quizPreguntas.length}</div>
+    `;
+
+    card.querySelectorAll('.quiz-option').forEach(btn => {
+        btn.addEventListener('click', () => {
+            respuestasQuiz[preguntaActual] = btn.textContent;
+            preguntaActual += 1;
+            if (preguntaActual >= quizPreguntas.length) {
+                mostrarResultadoQuiz();
+            } else {
+                renderizarPregunta();
+            }
+        });
+    });
+}
+
+function elegirCategoriaQuiz() {
+    const scores = {
+        '4x4': 0,
+        'daily': 0,
+        'lujo': 0,
+        'electrico': 0
+    };
+
+    const [uso, km, pasajeros, estilo, electrico] = respuestasQuiz;
+
+    if (uso === 'Montaña') {
+        scores['4x4'] += 3;
+    }
+    if (uso === 'Ciudad') {
+        scores['daily'] += 2;
+    }
+    if (uso === 'Autopista') {
+        scores['lujo'] += 2;
+    }
+    if (uso === 'Uso mixto') {
+        scores['daily'] += 1;
+        scores['4x4'] += 1;
+    }
+
+    if (km === 'Más de 80 km') {
+        scores['lujo'] += 2;
+    }
+    if (km === 'Menos de 30 km') {
+        scores['daily'] += 2;
+    }
+
+    if (pasajeros === '3-4') {
+        scores['daily'] += 1;
+    }
+    if (pasajeros === '5 o más') {
+        scores['daily'] += 2;
+    }
+
+    if (estilo === 'Cómodo') {
+        scores['lujo'] += 2;
+    }
+    if (estilo === 'Económico') {
+        scores['daily'] += 2;
+    }
+
+    if (electrico === 'Sí') {
+        scores['electrico'] += 3;
+    }
+    if (electrico === 'Me da igual') {
+        scores['daily'] += 1;
+    }
+
+    const mejor = Object.entries(scores).sort((a, b) => b[1] - a[1])[0][0];
+    return mejor;
+}
+
+function buscarCocheRecomendado(categoria) {
+    const encontrado = coches.find(c => obtenerCategoriasCoche(c).includes(categoria));
+    if (encontrado) return encontrado;
+    return coches.length ? coches[0] : { marca: 'Coche ideal', modelo: '', imagen: 'https://via.placeholder.com/400x250?text=Coche+recomendado' };
+}
+
+function mostrarResultadoQuiz() {
+    const categoria = elegirCategoriaQuiz();
+    const coche = buscarCocheRecomendado(categoria);
+    const card = document.getElementById('quiz-result-card');
+    const imagen = coche.imagen || `https://via.placeholder.com/400x250?text=${encodeURIComponent(coche.marca + ' ' + coche.modelo)}`;
+
+    registrarInteraccion('quiz', {
+        categoria,
+        modelo: `${coche.marca} ${coche.modelo || ''}`.trim(),
+        respuestas: [...respuestasQuiz]
+    });
+
+    card.innerHTML = `
+        <h3>Tu coche ideal es: <span class="quiz-category">${categoria.toUpperCase()}</span></h3>
+        <div class="quiz-result-grid">
+            <img src="${imagen}" alt="Coche recomendado" class="quiz-result-image">
+            <div class="quiz-result-summary">
+                <p><strong>Categoría recomendada:</strong> ${categoria}</p>
+                <p><strong>Modelo sugerido:</strong> ${coche.marca} ${coche.modelo || ''}</p>
+                <p><strong>Uso ideal:</strong> ${respuestasQuiz[0]}</p>
+                <p><strong>Kilometraje diario:</strong> ${respuestasQuiz[1]}</p>
+                <p><strong>Viajes con:</strong> ${respuestasQuiz[2]}</p>
+            </div>
+        </div>
+        <button id="quiz-restart-button" class="btn-primary">Volver a intentar</button>
+    `;
+    card.classList.remove('hidden');
+    document.getElementById('quiz-question-card').classList.add('hidden');
+
+    document.getElementById('quiz-restart-button').addEventListener('click', iniciarQuiz);
 }
 
 async function cargarMarcasVpic() {
@@ -220,6 +515,111 @@ async function cargarCochesLocales() {
         console.error('Error cargando coches.json:', err);
         coches = [];
     }
+}
+
+function obtenerCochesMasCaros() {
+    const conPrecio = coches.filter(c => Number(c.precio) > 0);
+    if (conPrecio.length > 0) {
+        return conPrecio
+            .slice()
+            .sort((a, b) => Number(b.precio) - Number(a.precio))
+            .slice(0, 5);
+    }
+    return coches.slice(0, 5);
+}
+
+function mostrarCarruselDeSueños() {
+    const topCars = obtenerCochesMasCaros();
+    dreamCars = topCars;
+    const track = document.getElementById('dream-carousel-track');
+    const dots = document.getElementById('dream-carousel-dots');
+    const prevBtn = document.getElementById('dream-prev');
+    const nextBtn = document.getElementById('dream-next');
+
+    if (!track || !dots || !prevBtn || !nextBtn) return;
+
+    track.innerHTML = '';
+    dots.innerHTML = '';
+    dreamCarouselIndex = 0;
+
+    if (topCars.length === 0) {
+        track.innerHTML = '<div class="dream-empty">No hay coches disponibles para mostrar en el carrusel.</div>';
+        return;
+    }
+
+    topCars.forEach((coche, index) => {
+        const imagenHTML = construirImgCarImages(coche, 'carousel-image', 700, 420);
+        const precio = coche.precio ? `$${Number(coche.precio).toLocaleString()}` : 'Precio no disponible';
+        const año = coche.año || 'Año desconocido';
+        const tipo = obtenerCategoriasCoche(coche).join(' · ') || 'Lujo · Exclusivo';
+
+        const slide = document.createElement('div');
+        slide.className = 'dream-carousel-slide';
+        slide.innerHTML = `
+            <div class="carousel-card">
+                <div>${imagenHTML}</div>
+                <div class="carousel-content">
+                    <span class="carousel-pill">Coche de tus sueños</span>
+                    <h3>${coche.marca} ${coche.modelo || ''}</h3>
+                    <p>${tipo}</p>
+                    <p><strong>${precio}</strong> · ${año}</p>
+                    <p>Descubre un vehículo premium pensado para quienes quieren lo mejor en rendimiento y estilo.</p>
+                    <button class="btn-primary" onclick="seleccionarCocheDelSueño(${index})">Comparar este</button>
+                </div>
+            </div>
+        `;
+
+        track.appendChild(slide);
+
+        const dot = document.createElement('button');
+        dot.className = 'carousel-dot';
+        dot.type = 'button';
+        dot.addEventListener('click', () => {
+            showDreamSlide(index);
+            resetDreamCarousel();
+        });
+        dots.appendChild(dot);
+    });
+
+    prevBtn.addEventListener('click', () => {
+        showDreamSlide(dreamCarouselIndex - 1);
+        resetDreamCarousel();
+    });
+    nextBtn.addEventListener('click', () => {
+        showDreamSlide(dreamCarouselIndex + 1);
+        resetDreamCarousel();
+    });
+
+    showDreamSlide(0);
+    startDreamCarousel();
+}
+
+function showDreamSlide(index) {
+    const slides = Array.from(document.querySelectorAll('.dream-carousel-slide'));
+    if (!slides.length) return;
+    dreamCarouselIndex = (index + slides.length) % slides.length;
+    slides.forEach((slide, idx) => {
+        slide.classList.toggle('active', idx === dreamCarouselIndex);
+    });
+    const dots = document.querySelectorAll('.carousel-dot');
+    dots.forEach((dot, idx) => dot.classList.toggle('active', idx === dreamCarouselIndex));
+}
+
+function startDreamCarousel() {
+    clearInterval(dreamCarouselInterval);
+    dreamCarouselInterval = setInterval(() => {
+        showDreamSlide(dreamCarouselIndex + 1);
+    }, 6000);
+}
+
+function resetDreamCarousel() {
+    clearInterval(dreamCarouselInterval);
+    startDreamCarousel();
+}
+
+function seleccionarCocheDelSueño(index) {
+    if (!dreamCars[index]) return;
+    añadirComparadorDesdeLista(dreamCars, index);
 }
 
 function crearCocheVpic({ marca, modelo = '', año = '', km = null, combustible = null, source = 'vpic' }) {
@@ -347,7 +747,8 @@ function comprarCoche(index) {
 
     carrito.push(coche);
     actualizarCarrito();
-    guardarDatosUsuario(); // Guardar en Firestore
+    guardarDatosUsuario();
+    registrarInteraccion('comprar', { origen: 'busqueda', coche: `${coche.marca} ${coche.modelo}` });
     alert(`${coche.marca} ${coche.modelo} añadido a la cesta.`);
 }
 
@@ -367,19 +768,21 @@ function comprarSugerencia(index) {
 
     carrito.push(coche);
     actualizarCarrito();
+    guardarDatosUsuario();
+    registrarInteraccion('comprar', { origen: 'sugerencia', coche: `${coche.marca} ${coche.modelo}` });
     alert(`${coche.marca} ${coche.modelo} añadido a la cesta.`);
 }
 
 function eliminarDelCarrito(index) {
     carrito.splice(index, 1);
     actualizarCarrito();
-    guardarDatosUsuario(); // Guardar en Firestore
+    guardarDatosUsuario();
 }
 
 function vaciarCarrito() {
     carrito = [];
     actualizarCarrito();
-    guardarDatosUsuario(); // Guardar en Firestore
+    guardarDatosUsuario();
 }
 
 function construirImgCarImages(coche, clase, ancho = 400, alto = 250) {
@@ -553,7 +956,6 @@ function mostrarCoches(lista) {
         div.innerHTML = `
             <div style="position: relative;">
                 ${imagenHTML}
-                <button class="fav-btn" onclick="toggleFav('${coche.marca} ${modelo}')">♥</button>
             </div>
             <h3>${coche.marca} ${modelo}</h3>
             <div class="coche-tags">
@@ -603,6 +1005,17 @@ function mostrarComparador() {
         return;
     }
 
+    const precios = comparados.map(c => Number(c.precio) || Infinity);
+    const potencias = comparados.map(c => Number(c.potencia) || 0);
+    const años = comparados.map(c => Number(c.año) || 0);
+    const cilindrosArr = comparados.map(c => Number(c.cilindros) || 0);
+    const comparar = comparados.length > 1;
+
+    const mejorPrecio = comparar ? Math.min(...precios) : null;
+    const mejorPotencia = comparar ? Math.max(...potencias) : null;
+    const mejorAño = comparar ? Math.max(...años) : null;
+    const mejorCilindros = comparar ? Math.max(...cilindrosArr) : null;
+
     comparados.forEach((coche, idx) => {
         const año = coche.año || 'No disponible';
         const cilindros = coche.cilindros || 'N/A';
@@ -613,21 +1026,38 @@ function mostrarComparador() {
         const precio = coche.precio ? `$${coche.precio.toLocaleString()}` : 'Precio no disponible';
         const imagenHTML = construirImgCarImages(coche, 'comparador-imagen', 200, 150);
 
-        comp.innerHTML += `
-            <div>
-                ${imagenHTML}
-                <h4>${coche.marca} ${coche.modelo || ''}</h4>
-                <p><strong>📅 Año:</strong> ${año}</p>
-                <p><strong>⚙️ Motor:</strong> ${cilindros} cilindros</p>
-                <p><strong>💨 Potencia:</strong> ${potencia}</p>
-                <p><strong>⛽ Combustible:</strong> ${combustible}</p>
-                <p><strong>🔄 Tracción:</strong> ${traccion}</p>
-                <p><strong>📦 Carrocería:</strong> ${carroceria}</p>
-                <p><strong>💰 Precio:</strong> ${precio}</p>
-                <button onclick="eliminarComparador(${idx})" style="background: #e74c3c; color: white; padding: 8px; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px; width: 100%;">Eliminar</button>
-                <hr>
-            </div>
+        const item = document.createElement('div');
+        item.classList.add('comp-item');
+        item.innerHTML = `
+            ${imagenHTML}
+            <h4>${coche.marca} ${coche.modelo || ''}</h4>
+            <p class="metric año"><strong>📅 Año:</strong> <span>${año}</span></p>
+            <p class="metric cilindros"><strong>⚙️ Motor:</strong> <span>${cilindros} cilindros</span></p>
+            <p class="metric potencia"><strong>💨 Potencia:</strong> <span>${potencia}</span></p>
+            <p class="metric combustible"><strong>⛽ Combustible:</strong> <span>${combustible}</span></p>
+            <p class="metric traccion"><strong>🔄 Tracción:</strong> <span>${traccion}</span></p>
+            <p class="metric carroceria"><strong>📦 Carrocería:</strong> <span>${carroceria}</span></p>
+            <p class="metric precio"><strong>💰 Precio:</strong> <span>${precio}</span></p>
+            <button onclick="eliminarComparador(${idx})" style="background: #e74c3c; color: white; padding: 8px; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px; width: 100%;">Eliminar</button>
+            <hr>
         `;
+
+        if (comparar) {
+            if (precios[idx] === mejorPrecio && precio !== 'Precio no disponible') {
+                item.querySelector('.metric.precio')?.classList.add('metric-best');
+            }
+            if (potencias[idx] === mejorPotencia && potencia !== 'N/A') {
+                item.querySelector('.metric.potencia')?.classList.add('metric-best');
+            }
+            if (años[idx] === mejorAño && año !== 'No disponible') {
+                item.querySelector('.metric.año')?.classList.add('metric-best');
+            }
+            if (cilindrosArr[idx] === mejorCilindros && cilindros !== 'N/A') {
+                item.querySelector('.metric.cilindros')?.classList.add('metric-best');
+            }
+        }
+
+        comp.appendChild(item);
     });
 }
 
@@ -749,8 +1179,26 @@ document.getElementById('busqueda').addEventListener('input', async (e) => {
     });
 });
 
+function actualizarTextoCategorias() {
+    const seleccionadas = Array.from(document.querySelectorAll('.category-checkbox:checked')).map(input => input.value);
+    const boton = document.getElementById('toggle-category-panel');
+    if (!boton) return;
+    boton.textContent = seleccionadas.length ? `Categorías (${seleccionadas.length}) ▾` : 'Categorías ▾';
+}
+
+function cerrarPanelCategoriasSiNecesario(event) {
+    const panel = document.getElementById('category-panel');
+    const boton = document.getElementById('toggle-category-panel');
+    if (!panel || !boton) return;
+    if (panel.classList.contains('hidden')) return;
+    if (!panel.contains(event.target) && !boton.contains(event.target)) {
+        panel.classList.add('hidden');
+    }
+}
+
 document.querySelectorAll('.category-checkbox').forEach(input => {
     input.addEventListener('change', async () => {
+        actualizarTextoCategorias();
         const texto = document.getElementById('busqueda').value;
         if (!texto.trim()) {
             const filtrados = filtrarPorOpciones(coches);
@@ -763,8 +1211,15 @@ document.querySelectorAll('.category-checkbox').forEach(input => {
 });
 
 document.getElementById('toggle-category-panel').addEventListener('click', () => {
-    document.getElementById('category-panel').classList.toggle('hidden');
+    const panel = document.getElementById('category-panel');
+    if (!panel) return;
+    panel.classList.toggle('hidden');
+    actualizarTextoCategorias();
 });
+
+document.addEventListener('click', cerrarPanelCategoriasSiNecesario);
+
+document.addEventListener('DOMContentLoaded', actualizarTextoCategorias);
 
 document.getElementById('btn-home').addEventListener('click', () => {
     toggleModoBusqueda();
@@ -783,6 +1238,7 @@ document.getElementById('checkout-button').addEventListener('click', () => {
     actualizarCarrito();
 });
 
-window.addEventListener('load', () => {
-    actualizarCarrito();
-});
+    document.getElementById('btn-open-quiz')?.addEventListener('click', abrirQuiz);
+    document.getElementById('quiz-start-button')?.addEventListener('click', iniciarQuiz);
+    document.getElementById('quiz-close-button')?.addEventListener('click', cerrarQuiz);
+

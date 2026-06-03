@@ -8,7 +8,15 @@
     "dev": "python3 server.py",
     "start": "python3 server.py"
   },
-  "keywords": ["cars", "comparison", "firebase", "webapp"],
+  "keywords": [
+    "cars",
+    "comparison",
+    "firebase",
+    "webapp"
+  ],
   "author": "Victor Jaen",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "vercel": "^54.9.0"
+  }
 }
